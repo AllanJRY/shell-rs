@@ -13,8 +13,12 @@ fn main() {
         let stdin = io::stdin();
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
+        let input = input.trim();
 
-        let maybe_cmd = input.trim().split_once(' ');
+        let maybe_cmd = input
+            .trim()
+            .split_once(' ')
+            .map(|(cmd, args)| (cmd.trim(), args.trim()));
 
         match maybe_cmd {
             Some(("exit", arg)) => {
@@ -24,16 +28,19 @@ fn main() {
                 println!("{arg}");
             }
             Some(("type", arg)) => match arg {
-                "echo" | "exit" | "type" => println!("{} is a shell builtin", arg.trim()),
+                "echo" | "exit" | "type" => println!("{arg} is a shell builtin"),
                 _ => {
-                    if let Some(ext_cmd) = path.iter().find(|dir| dir.ends_with(arg)) {
-                        println!("{} is {}", arg, ext_cmd);
+                    if let Some(ext_cmd) = path
+                        .iter()
+                        .find(|path| std::fs::metadata(format!("{path}/{arg}")).is_ok())
+                    {
+                        println!("{arg} is {ext_cmd}/{arg}");
                     } else {
-                        println!("{} not found", arg.trim());
+                        println!("{arg} not found");
                     }
                 }
             },
-            _ => println!("{}: command not found", input.trim()),
+            _ => println!("{input}: command not found"),
         };
     }
 }
