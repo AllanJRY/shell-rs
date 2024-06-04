@@ -22,7 +22,7 @@ fn main() {
             }
             Some(("type", arg)) => match arg {
                 "echo" | "exit" | "type" => println!("{} is a shell builtin", arg.trim()),
-                _ => println!("{} not found.", arg.trim()),
+                _ => println!("{} not found", arg.trim()),
             },
             _ => println!("{}: command not found", input.trim()),
         };
