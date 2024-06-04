@@ -2,6 +2,9 @@
 use std::io::{self, Write};
 
 fn main() {
+    let path = std::env::var("PATH").unwrap_or_default();
+    let path: Vec<&str> = path.split(':').collect();
+
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -22,7 +25,13 @@ fn main() {
             }
             Some(("type", arg)) => match arg {
                 "echo" | "exit" | "type" => println!("{} is a shell builtin", arg.trim()),
-                _ => println!("{} not found", arg.trim()),
+                _ => {
+                    if let Some(ext_cmd) = path.iter().find(|dir| dir.ends_with(arg)) {
+                        println!("{} is {}", arg, ext_cmd);
+                    } else {
+                        println!("{} not found", arg.trim());
+                    }
+                }
             },
             _ => println!("{}: command not found", input.trim()),
         };
