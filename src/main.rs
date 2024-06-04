@@ -20,6 +20,10 @@ fn main() {
             Some(("echo", arg)) => {
                 println!("{arg}");
             }
+            Some(("type", arg)) => match arg {
+                "echo" | "exit" | "type" => println!("{arg} is a shell builtin"),
+                _ => println!("{arg} not found."),
+            },
             _ => println!("{}: command not found", input.trim()),
         };
     }
