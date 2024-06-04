@@ -21,8 +21,8 @@ fn main() {
                 println!("{arg}");
             }
             Some(("type", arg)) => match arg {
-                "echo" | "exit" | "type" => println!("{arg} is a shell builtin"),
-                _ => println!("{arg} not found."),
+                "echo" | "exit" | "type" => println!("{} is a shell builtin", arg.trim()),
+                _ => println!("{} not found.", arg.trim()),
             },
             _ => println!("{}: command not found", input.trim()),
         };
