@@ -1,3 +1,4 @@
+use std::env;
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
@@ -14,41 +15,52 @@ fn main() {
         stdin.read_line(&mut input).unwrap();
         let input = input.trim();
 
-        let maybe_cmd = input
-            .trim()
-            .split_once(' ')
-            .map(|(cmd, args)| (cmd.trim(), args.trim()));
+        if input.is_empty() {
+            continue;
+        }
 
-        match maybe_cmd {
-            Some(("exit", arg)) => {
-                std::process::exit(arg.parse().expect("Invalid exit code"));
-            }
-            Some(("echo", arg)) => {
-                println!("{arg}");
-            }
-            Some(("type", arg)) => match arg {
-                "echo" | "exit" | "type" => println!("{arg} is a shell builtin"),
-                _ => {
-                    if let Some(ext_cmd) = ext_cmds.try_find_cmd(arg) {
-                        println!("{arg} is {ext_cmd}");
+        if let Some(cmd_with_arg) = input
+            .split_once(' ')
+            .map(|(cmd, args)| (cmd.trim(), args.trim()))
+        {
+            match cmd_with_arg {
+                ("exit", arg) => {
+                    std::process::exit(arg.parse().expect("Invalid exit code"));
+                }
+                ("echo", arg) => {
+                    println!("{arg}");
+                }
+                ("type", arg) => match arg {
+                    "echo" | "exit" | "type" => println!("{arg} is a shell builtin"),
+                    _ => {
+                        if let Some(ext_cmd) = ext_cmds.try_find_cmd(arg) {
+                            println!("{arg} is {ext_cmd}");
+                        } else {
+                            println!("{arg} not found");
+                        }
+                    }
+                },
+                (cmd, arg) => {
+                    if let Some(ext_cmd) = ext_cmds.try_find_cmd(cmd) {
+                        // .status() inherit from the parent stdout, so no need to collect the ouput.
+                        std::process::Command::new(ext_cmd)
+                            .arg(arg)
+                            .status()
+                            .expect("unable to execute external command");
                     } else {
-                        println!("{arg} not found");
+                        println!("{cmd}: command not found");
                     }
                 }
-            },
-            Some((cmd, arg)) => {
-                if let Some(ext_cmd) = ext_cmds.try_find_cmd(cmd) {
-                    // .status() inherit from the parent stdout, so no need to collect the ouput.
-                    std::process::Command::new(ext_cmd)
-                        .arg(arg)
-                        .status()
-                        .expect("unable to execute external command");
-                } else {
-                    println!("{input}: command not found");
+            };
+        } else {
+            match input {
+                "pwd" => {
+                    let current_dir = env::current_dir().unwrap();
+                    println!("{}", current_dir.display());
                 }
+                _ => println!("{input}: command not found"),
             }
-            _ => println!("{input}: command not found"),
-        };
+        }
     }
 }
 
