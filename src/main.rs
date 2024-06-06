@@ -30,6 +30,11 @@ fn main() {
                 ("echo", arg) => {
                     println!("{arg}");
                 }
+                ("cd", arg) => {
+                    if std::env::set_current_dir(arg).is_err() {
+                        println!("cd: {arg}: No such file or directory");
+                    }
+                }
                 ("type", arg) => match arg {
                     "echo" | "exit" | "type" => println!("{arg} is a shell builtin"),
                     _ => {
