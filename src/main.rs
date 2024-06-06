@@ -2,8 +2,7 @@
 use std::io::{self, Write};
 
 fn main() {
-    let path = std::env::var("PATH").unwrap_or_default();
-    let path: Vec<&str> = path.split(':').collect();
+    let ext_cmds = ExtCmds::new();
 
     loop {
         print!("$ ");
@@ -30,17 +29,45 @@ fn main() {
             Some(("type", arg)) => match arg {
                 "echo" | "exit" | "type" => println!("{arg} is a shell builtin"),
                 _ => {
-                    if let Some(ext_cmd) = path
-                        .iter()
-                        .find(|path| std::fs::metadata(format!("{path}/{arg}")).is_ok())
-                    {
-                        println!("{arg} is {ext_cmd}/{arg}");
+                    if let Some(ext_cmd) = ext_cmds.try_find_cmd(arg) {
+                        println!("{arg} is {ext_cmd}");
                     } else {
                         println!("{arg} not found");
                     }
                 }
             },
+            Some((cmd, arg)) => {
+                if let Some(ext_cmd) = ext_cmds.try_find_cmd(cmd) {
+                    // .status() inherit from the parent stdout, so no need to collect the ouput.
+                    std::process::Command::new(ext_cmd)
+                        .arg(arg)
+                        .status()
+                        .expect("unable to execute external command");
+                } else {
+                    println!("{input}: command not found");
+                }
+            }
             _ => println!("{input}: command not found"),
         };
+    }
+}
+
+#[derive(Debug)]
+struct ExtCmds {
+    path_var: Vec<String>,
+}
+
+impl ExtCmds {
+    fn new() -> Self {
+        let path = std::env::var("PATH").unwrap_or_default();
+        let path: Vec<String> = path.split(':').map(|path| path.to_string()).collect();
+        Self { path_var: path }
+    }
+
+    fn try_find_cmd(&self, cmd_name: &str) -> Option<String> {
+        self.path_var
+            .iter()
+            .find(|path| std::fs::metadata(format!("{path}/{cmd_name}")).is_ok())
+            .map(|path| format!("{path}/{cmd_name}"))
     }
 }
