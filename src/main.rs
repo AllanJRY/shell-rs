@@ -30,9 +30,26 @@ fn main() {
                 ("echo", arg) => {
                     println!("{arg}");
                 }
-                ("cd", arg) => {
-                    if std::env::set_current_dir(arg).is_err() {
-                        println!("cd: {arg}: No such file or directory");
+                ("cd", path) => {
+                    // TODO: take "../" chars into account when there are in middle of the string
+                    // and ignore "./", because it only has importance when string start with.
+                    if path.starts_with('/') {
+                        if std::env::set_current_dir(path).is_err() {
+                            println!("cd: {path}: No such file or directory");
+                        }
+                    } else {
+                        let mut target_dir = std::env::current_dir().unwrap();
+                        let mut remaining_path = path;
+                        while let Some((_, remaining)) = remaining_path.split_once("../") {
+                            if let Some(parent_dir) = target_dir.parent().map(|p| p.to_owned()) {
+                                target_dir = parent_dir;
+                            }
+                            remaining_path = remaining;
+                        }
+                        target_dir.push(remaining_path);
+                        if std::env::set_current_dir(target_dir).is_err() {
+                            println!("cd: {path}: No such file or directory");
+                        }
                     }
                 }
                 ("type", arg) => match arg {
